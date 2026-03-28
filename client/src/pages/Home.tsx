@@ -1,15 +1,25 @@
 /**
  * Home Page — Robert Archibald General Contracting LTD.
  *
- * Design: Maritime Industrial Heritage
- * - DM Serif Display headings, Work Sans body, JetBrains Mono for data
- * - Charcoal / safety-orange / sandstone palette
- * - Diagonal section cuts, dot-grid textures, construction-line dividers
- * - Weighted animations (slide-up with gravity)
+ * PREMIUM 3D UPGRADE
+ * - Parallax hero with layered depth
+ * - Glassmorphism nav & cards
+ * - 3D tilt hover on service cards
+ * - Staggered reveal animations with spring physics
+ * - Floating/elevated shadows on all interactive elements
+ * - Smooth scroll-linked transforms
  */
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useAnimation } from "framer-motion";
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  motion,
+  useInView,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValue,
+  AnimatePresence,
+} from "framer-motion";
 import {
   Phone,
   MapPin,
@@ -41,7 +51,11 @@ const BARN_IMG =
 const RENOVATION_IMG =
   "https://d2xsxph8kpxj0f.cloudfront.net/310419663031449034/37H85K3jGXhaow3QVGy8KL/renovation-interior-4s6B6CP8U8PPVnwDGrGcUo.webp";
 
-/* ─── Animated counter hook ─── */
+/* ═══════════════════════════════════════════════════════════════════
+   HOOKS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Animated counter with spring feel */
 function useCounter(end: number, duration = 2000) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -66,7 +80,42 @@ function useCounter(end: number, duration = 2000) {
   return { count, ref };
 }
 
-/* ─── Fade-up animation wrapper ─── */
+/* 3D tilt hook for cards */
+function useTilt(intensity = 8) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [intensity, -intensity]), {
+    stiffness: 300,
+    damping: 30,
+  });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-intensity, intensity]), {
+    stiffness: 300,
+    damping: 30,
+  });
+
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      x.set((e.clientX - rect.left) / rect.width - 0.5);
+      y.set((e.clientY - rect.top) / rect.height - 0.5);
+    },
+    [x, y]
+  );
+
+  const onMouseLeave = useCallback(() => {
+    x.set(0);
+    y.set(0);
+  }, [x, y]);
+
+  return { rotateX, rotateY, onMouseMove, onMouseLeave };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMATION WRAPPERS
+   ═══════════════════════════════════════════════════════════════════ */
+
+const springTransition = { type: "spring" as const, stiffness: 100, damping: 20 };
+
 function FadeUp({
   children,
   delay = 0,
@@ -78,10 +127,10 @@ function FadeUp({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 60, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ ...springTransition, delay }}
       className={className}
     >
       {children}
@@ -89,7 +138,224 @@ function FadeUp({
   );
 }
 
-/* ─── Services data ─── */
+function SlideIn({
+  children,
+  from = "left",
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  from?: "left" | "right";
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: from === "left" ? -80 : 80 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ ...springTransition, delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3D SERVICE CARD
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ServiceCard({
+  icon: Icon,
+  title,
+  desc,
+  index,
+}: {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  index: number;
+}) {
+  const tilt = useTilt(6);
+
+  return (
+    <FadeUp delay={index * 0.08}>
+      <motion.div
+        onMouseMove={tilt.onMouseMove}
+        onMouseLeave={tilt.onMouseLeave}
+        style={{
+          rotateX: tilt.rotateX,
+          rotateY: tilt.rotateY,
+          transformPerspective: 800,
+          transformStyle: "preserve-3d",
+        }}
+        className="group relative p-8 bg-gradient-to-br from-white to-brand-cream border border-brand-sandstone/60 overflow-hidden
+                   shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.15)]
+                   transition-shadow duration-500"
+      >
+        {/* Glossy highlight */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+        {/* Number label */}
+        <span
+          className="absolute top-4 right-4 font-[family-name:var(--font-mono)] text-xs text-brand-orange/30 tracking-wider"
+          style={{ transform: "translateZ(20px)" }}
+        >
+          0{index + 1}
+        </span>
+
+        {/* Icon with 3D pop */}
+        <div
+          className="w-14 h-14 bg-gradient-to-br from-brand-orange to-brand-orange/80 flex items-center justify-center mb-6
+                     shadow-[0_8px_24px_-4px_rgba(180,80,20,0.35)] group-hover:shadow-[0_12px_32px_-4px_rgba(180,80,20,0.5)]
+                     transition-all duration-500 group-hover:scale-110"
+          style={{ transform: "translateZ(30px)" }}
+        >
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+
+        <h3
+          className="font-[family-name:var(--font-display)] text-xl text-brand-charcoal mb-3"
+          style={{ transform: "translateZ(15px)" }}
+        >
+          {title}
+        </h3>
+        <p
+          className="text-muted-foreground leading-relaxed text-[15px]"
+          style={{ transform: "translateZ(10px)" }}
+        >
+          {desc}
+        </p>
+
+        {/* Bottom accent line with glow */}
+        <div className="absolute bottom-0 left-0 w-0 h-[3px] bg-gradient-to-r from-brand-orange to-brand-orange/60 group-hover:w-full transition-all duration-700 shadow-[0_0_12px_rgba(180,80,20,0.4)]" />
+      </motion.div>
+    </FadeUp>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3D GALLERY CARD
+   ═══════════════════════════════════════════════════════════════════ */
+
+function GalleryCard({
+  src,
+  alt,
+  label,
+  index,
+}: {
+  src: string;
+  alt: string;
+  label: string;
+  index: number;
+}) {
+  const tilt = useTilt(4);
+
+  return (
+    <FadeUp delay={index * 0.12}>
+      <motion.div
+        onMouseMove={tilt.onMouseMove}
+        onMouseLeave={tilt.onMouseLeave}
+        style={{
+          rotateX: tilt.rotateX,
+          rotateY: tilt.rotateY,
+          transformPerspective: 1000,
+        }}
+        className="group relative overflow-hidden aspect-[4/3]
+                   shadow-[0_8px_30px_-8px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.5)]
+                   transition-shadow duration-500"
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+        {/* Glassmorphism label */}
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="inline-block px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 shadow-lg">
+            <span className="font-[family-name:var(--font-mono)] text-xs text-white tracking-widest uppercase">
+              {label}
+            </span>
+          </div>
+        </div>
+
+        {/* Shine sweep on hover */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+      </motion.div>
+    </FadeUp>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3D REVIEW CARD
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ReviewCard({
+  name,
+  rating,
+  text,
+  time,
+  index,
+}: {
+  name: string;
+  rating: number;
+  text: string;
+  time: string;
+  index: number;
+}) {
+  const tilt = useTilt(5);
+
+  return (
+    <FadeUp delay={index * 0.12}>
+      <motion.div
+        onMouseMove={tilt.onMouseMove}
+        onMouseLeave={tilt.onMouseLeave}
+        style={{
+          rotateX: tilt.rotateX,
+          rotateY: tilt.rotateY,
+          transformPerspective: 800,
+        }}
+        className="bg-gradient-to-br from-white to-brand-cream border border-brand-sandstone/60 p-8 relative
+                   shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.12)]
+                   transition-shadow duration-500"
+      >
+        {/* Quote mark with depth */}
+        <span className="absolute top-4 right-6 font-[family-name:var(--font-display)] text-7xl text-brand-orange/10 leading-none select-none">
+          &ldquo;
+        </span>
+
+        <div className="flex gap-1 mb-4">
+          {[...Array(rating)].map((_, j) => (
+            <Star key={j} className="w-4 h-4 text-brand-orange fill-brand-orange drop-shadow-[0_1px_2px_rgba(180,80,20,0.3)]" />
+          ))}
+        </div>
+
+        <p className="text-brand-charcoal leading-relaxed mb-6 italic relative z-10">
+          &ldquo;{text}&rdquo;
+        </p>
+
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 bg-gradient-to-br from-brand-orange to-brand-orange/70 flex items-center justify-center font-[family-name:var(--font-display)] text-white text-lg shadow-[0_4px_12px_-2px_rgba(180,80,20,0.4)]">
+            {name.charAt(0)}
+          </div>
+          <div>
+            <p className="font-semibold text-brand-charcoal text-sm">{name}</p>
+            <p className="text-muted-foreground text-xs font-[family-name:var(--font-mono)]">{time}</p>
+          </div>
+        </div>
+      </motion.div>
+    </FadeUp>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════════════════════════════ */
+
 const services = [
   {
     icon: HomeIcon,
@@ -123,7 +389,6 @@ const services = [
   },
 ];
 
-/* ─── Gallery data ─── */
 const gallery = [
   { src: RESIDENTIAL_IMG, alt: "Custom residential home build in Nova Scotia", label: "Residential" },
   { src: EXCAVATION_IMG, alt: "Foundation excavation with heavy equipment", label: "Excavation" },
@@ -131,33 +396,37 @@ const gallery = [
   { src: RENOVATION_IMG, alt: "Interior renovation — modern kitchen", label: "Renovation" },
 ];
 
-/* ─── Reviews data ─── */
 const reviews = [
-  {
-    name: "Leslie Chisholm",
-    rating: 5,
-    text: "Very good people, very helpful.",
-    time: "Google Review",
-  },
-  {
-    name: "Alexander Delorey",
-    rating: 5,
-    text: "Excellent work and professional service. Highly recommend Archibald Contracting for any project.",
-    time: "Google Review",
-  },
-  {
-    name: "Christina Turay",
-    rating: 5,
-    text: "Quality craftsmanship and a team you can trust. They delivered exactly what was promised.",
-    time: "Google Review",
-  },
+  { name: "Leslie Chisholm", rating: 5, text: "Very good people, very helpful.", time: "Google Review" },
+  { name: "Alexander Delorey", rating: 5, text: "Excellent work and professional service. Highly recommend Archibald Contracting for any project.", time: "Google Review" },
+  { name: "Christina Turay", rating: 5, text: "Quality craftsmanship and a team you can trust. They delivered exactly what was promised.", time: "Google Review" },
 ];
 
-/* ═══════════════════════════════════════════════════════════════════════════ */
+const navLinks = [
+  { href: "#services", label: "Services" },
+  { href: "#work", label: "Our Work" },
+  { href: "#about", label: "About" },
+  { href: "#reviews", label: "Reviews" },
+  { href: "#contact", label: "Contact" },
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════ */
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  /* Parallax for hero */
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(heroProgress, [0, 1], [0, 200]);
+  const heroScale = useTransform(heroProgress, [0, 1], [1, 1.15]);
+  const heroOpacity = useTransform(heroProgress, [0, 0.8], [1, 0]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -165,34 +434,26 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { href: "#services", label: "Services" },
-    { href: "#work", label: "Our Work" },
-    { href: "#about", label: "About" },
-    { href: "#reviews", label: "Reviews" },
-    { href: "#contact", label: "Contact" },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden">
-      {/* ─── NAVIGATION ─── */}
+      {/* ─── NAVIGATION — Glassmorphism ─── */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "bg-brand-dark/95 backdrop-blur-md shadow-lg"
-            : "bg-transparent"
+            ? "bg-brand-dark/80 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.4)] border-b border-white/5"
+            : "bg-gradient-to-b from-black/40 to-transparent"
         }`}
       >
         <div className="container flex items-center justify-between h-16 lg:h-20">
-          <a href="#" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-brand-orange rounded-sm flex items-center justify-center">
+          <a href="#" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-brand-orange to-brand-orange/80 rounded-sm flex items-center justify-center shadow-[0_4px_16px_-2px_rgba(180,80,20,0.4)] group-hover:shadow-[0_8px_24px_-2px_rgba(180,80,20,0.6)] transition-shadow duration-300">
               <HardHat className="w-5 h-5 text-white" />
             </div>
             <div className="leading-tight">
               <span className="font-[family-name:var(--font-display)] text-white text-lg tracking-tight">
-                Archibald
+                Robert Archibald
               </span>
-              <span className="hidden sm:block text-[11px] text-white/60 font-[family-name:var(--font-mono)] tracking-wider uppercase">
+              <span className="hidden sm:block text-[11px] text-white/50 font-[family-name:var(--font-mono)] tracking-wider uppercase">
                 General Contracting
               </span>
             </div>
@@ -204,14 +465,17 @@ export default function Home() {
               <a
                 key={l.href}
                 href={l.href}
-                className="text-sm text-white/70 hover:text-brand-orange transition-colors font-medium tracking-wide uppercase"
+                className="relative text-sm text-white/70 hover:text-white transition-colors font-medium tracking-wide uppercase group"
               >
                 {l.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-brand-orange group-hover:w-full transition-all duration-300 shadow-[0_0_8px_rgba(180,80,20,0.4)]" />
               </a>
             ))}
             <a
               href="tel:9028633935"
-              className="ml-4 px-5 py-2.5 bg-brand-orange text-white text-sm font-semibold tracking-wide uppercase hover:bg-brand-orange/90 transition-colors"
+              className="ml-4 px-6 py-2.5 bg-gradient-to-r from-brand-orange to-brand-orange/90 text-white text-sm font-semibold tracking-wide uppercase
+                         shadow-[0_4px_20px_-4px_rgba(180,80,20,0.5)] hover:shadow-[0_8px_30px_-4px_rgba(180,80,20,0.7)]
+                         hover:-translate-y-0.5 transition-all duration-300"
             >
               (902) 863-3935
             </a>
@@ -227,76 +491,103 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Mobile nav */}
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:hidden bg-brand-dark/98 backdrop-blur-md border-t border-white/10"
-          >
-            <nav className="container py-6 flex flex-col gap-4">
-              {navLinks.map((l) => (
+        {/* Mobile nav — glassmorphism */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="lg:hidden bg-brand-dark/90 backdrop-blur-xl border-t border-white/10 overflow-hidden"
+            >
+              <nav className="container py-6 flex flex-col gap-4">
+                {navLinks.map((l, i) => (
+                  <motion.a
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="text-white/80 hover:text-brand-orange transition-colors font-medium tracking-wide uppercase text-sm"
+                  >
+                    {l.label}
+                  </motion.a>
+                ))}
                 <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-white/80 hover:text-brand-orange transition-colors font-medium tracking-wide uppercase text-sm"
+                  href="tel:9028633935"
+                  className="mt-2 px-5 py-3 bg-gradient-to-r from-brand-orange to-brand-orange/90 text-white text-sm font-semibold tracking-wide uppercase text-center shadow-lg"
                 >
-                  {l.label}
+                  Call (902) 863-3935
                 </a>
-              ))}
-              <a
-                href="tel:9028633935"
-                className="mt-2 px-5 py-3 bg-brand-orange text-white text-sm font-semibold tracking-wide uppercase text-center"
-              >
-                Call (902) 863-3935
-              </a>
-            </nav>
-          </motion.div>
-        )}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
-      {/* ─── HERO ─── */}
-      <section className="relative min-h-[100vh] flex items-end pb-16 lg:pb-24">
-        {/* Background image */}
-        <div className="absolute inset-0">
+      {/* ─── HERO — Parallax + layered depth ─── */}
+      <section ref={heroRef} className="relative min-h-[100vh] flex items-end pb-16 lg:pb-24 overflow-hidden">
+        {/* Parallax background */}
+        <motion.div className="absolute inset-0" style={{ y: heroY, scale: heroScale }}>
           <img
             src={HERO_IMG}
             alt="Aerial view of a home under construction in Nova Scotia"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/60 to-brand-dark/20" />
-        </div>
+        </motion.div>
 
-        <div className="container relative z-10">
+        {/* Multi-layer gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/40 to-transparent" />
+
+        {/* Animated grain overlay for texture */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
+
+        <motion.div className="container relative z-10" style={{ opacity: heroOpacity }}>
           <div className="max-w-3xl">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-3 mb-6"
             >
-              <div className="w-12 h-[2px] bg-brand-orange" />
+              <motion.div
+                className="w-12 h-[2px] bg-brand-orange"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                style={{ originX: 0 }}
+              />
               <span className="text-brand-orange font-[family-name:var(--font-mono)] text-sm tracking-widest uppercase">
                 Antigonish, Nova Scotia
               </span>
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl lg:text-7xl text-white leading-[1.1] mb-6"
             >
-              Building Nova Scotia
+              <span className="inline-block">Building Nova Scotia</span>
               <br />
-              <span className="text-brand-orange">Since 2010</span>
+              <motion.span
+                className="inline-block text-brand-orange"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                style={{ textShadow: "0 4px 30px rgba(180,80,20,0.3)" }}
+              >
+                Since 2010
+              </motion.span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.6 }}
+              transition={{ duration: 0.8, delay: 0.9 }}
               className="text-white/70 text-lg lg:text-xl max-w-xl mb-10 leading-relaxed"
             >
               Specializing in residential, commercial, and agricultural
@@ -305,43 +596,59 @@ export default function Home() {
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.8 }}
+              transition={{ duration: 0.8, delay: 1.1 }}
               className="flex flex-col sm:flex-row gap-4"
             >
               <a
                 href="tel:9028633935"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-brand-orange text-white font-semibold tracking-wide uppercase text-sm hover:bg-brand-orange/90 transition-all hover:shadow-lg hover:shadow-brand-orange/20"
+                className="group inline-flex items-center justify-center gap-2 px-8 py-4
+                           bg-gradient-to-r from-brand-orange to-brand-orange/90 text-white font-semibold tracking-wide uppercase text-sm
+                           shadow-[0_8px_30px_-4px_rgba(180,80,20,0.5)] hover:shadow-[0_16px_50px_-4px_rgba(180,80,20,0.7)]
+                           hover:-translate-y-1 transition-all duration-300"
               >
-                <Phone className="w-4 h-4" />
+                <Phone className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
                 Get a Free Estimate
               </a>
               <a
                 href="#services"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-white/30 text-white font-semibold tracking-wide uppercase text-sm hover:border-white/60 transition-all"
+                className="group inline-flex items-center justify-center gap-2 px-8 py-4
+                           border-2 border-white/20 text-white font-semibold tracking-wide uppercase text-sm
+                           backdrop-blur-sm bg-white/5
+                           hover:bg-white/10 hover:border-white/40 hover:-translate-y-1
+                           transition-all duration-300"
               >
                 Our Services
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </a>
             </motion.div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Scroll indicator */}
+        {/* Scroll indicator with pulse */}
         <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
+          animate={{ y: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
           className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10"
         >
-          <ChevronDown className="w-6 h-6 text-white/40" />
+          <div className="w-8 h-12 border-2 border-white/20 rounded-full flex items-start justify-center p-2">
+            <motion.div
+              animate={{ y: [0, 12, 0], opacity: [1, 0.3, 1] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              className="w-1.5 h-1.5 bg-brand-orange rounded-full shadow-[0_0_8px_rgba(180,80,20,0.6)]"
+            />
+          </div>
         </motion.div>
       </section>
 
-      {/* ─── STATS BAR ─── */}
-      <section className="relative bg-brand-dark py-10 lg:py-14" style={{ clipPath: "polygon(0 0, 100% 4%, 100% 100%, 0 96%)", marginTop: "-3rem", paddingTop: "5rem", paddingBottom: "5rem" }}>
+      {/* ─── STATS BAR — Elevated glass panels ─── */}
+      <section
+        className="relative bg-brand-dark py-10 lg:py-14"
+        style={{ clipPath: "polygon(0 0, 100% 4%, 100% 100%, 0 96%)", marginTop: "-3rem", paddingTop: "5rem", paddingBottom: "5rem" }}
+      >
         <div className="container">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {[
               { end: 15, suffix: "+", label: "Years Experience" },
               { end: 4, suffix: ".4", label: "Google Rating", prefix: "" },
@@ -351,10 +658,13 @@ export default function Home() {
               const counter = useCounter(stat.end, 1800);
               return (
                 <FadeUp key={i} delay={i * 0.1}>
-                  <div className="text-center">
+                  <div className="text-center p-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-sm
+                                  shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_-4px_rgba(180,80,20,0.15)]
+                                  hover:-translate-y-1 transition-all duration-500">
                     <span
                       ref={counter.ref}
                       className="font-[family-name:var(--font-display)] text-4xl lg:text-5xl text-brand-orange"
+                      style={{ textShadow: "0 2px 20px rgba(180,80,20,0.3)" }}
                     >
                       {stat.prefix ?? ""}
                       {counter.count}
@@ -371,12 +681,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── SERVICES ─── */}
+      {/* ─── SERVICES — 3D tilt cards ─── */}
       <section id="services" className="py-20 lg:py-32 dot-grid relative" style={{ marginTop: "-2rem", paddingTop: "5rem" }}>
         <div className="container">
           <FadeUp>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-[2px] bg-brand-orange" />
+              <motion.div
+                className="w-8 h-[2px] bg-brand-orange"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                style={{ originX: 0 }}
+              />
               <span className="text-brand-orange font-[family-name:var(--font-mono)] text-xs tracking-widest uppercase">
                 What We Do
               </span>
@@ -391,33 +708,16 @@ export default function Home() {
             </p>
           </FadeUp>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ perspective: "1200px" }}>
             {services.map((s, i) => (
-              <FadeUp key={i} delay={i * 0.08}>
-                <div className="group bg-card border border-border p-8 hover:shadow-xl hover:shadow-brand-charcoal/5 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden">
-                  {/* Number label */}
-                  <span className="absolute top-4 right-4 font-[family-name:var(--font-mono)] text-xs text-muted-foreground/40 tracking-wider">
-                    0{i + 1}
-                  </span>
-                  <div className="w-12 h-12 bg-brand-orange/10 flex items-center justify-center mb-6 group-hover:bg-brand-orange/20 transition-colors">
-                    <s.icon className="w-6 h-6 text-brand-orange" />
-                  </div>
-                  <h3 className="font-[family-name:var(--font-display)] text-xl text-brand-charcoal mb-3">
-                    {s.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed text-[15px]">
-                    {s.desc}
-                  </p>
-                  {/* Bottom accent line */}
-                  <div className="absolute bottom-0 left-0 w-0 h-[3px] bg-brand-orange group-hover:w-full transition-all duration-500" />
-                </div>
-              </FadeUp>
+              <ServiceCard key={i} icon={s.icon} title={s.title} desc={s.desc} index={i} />
             ))}
           </div>
 
-          {/* Additional services note */}
+          {/* Additional services — elevated callout */}
           <FadeUp delay={0.3}>
-            <div className="mt-12 p-6 border-l-4 border-brand-orange bg-brand-sandstone/50">
+            <div className="mt-12 p-6 border-l-4 border-brand-orange bg-gradient-to-r from-brand-sandstone/80 to-brand-cream/60 backdrop-blur-sm
+                            shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)]">
               <p className="text-brand-charcoal font-medium">
                 We also offer{" "}
                 <strong>demolition services</strong>,{" "}
@@ -430,7 +730,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── OUR WORK / GALLERY ─── */}
+      {/* ─── OUR WORK / GALLERY — 3D tilt images ─── */}
       <section
         id="work"
         className="py-20 lg:py-32 bg-brand-dark relative"
@@ -439,7 +739,14 @@ export default function Home() {
         <div className="container">
           <FadeUp>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-[2px] bg-brand-orange" />
+              <motion.div
+                className="w-8 h-[2px] bg-brand-orange"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                style={{ originX: 0 }}
+              />
               <span className="text-brand-orange font-[family-name:var(--font-mono)] text-xs tracking-widest uppercase">
                 Portfolio
               </span>
@@ -453,55 +760,58 @@ export default function Home() {
             </p>
           </FadeUp>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6" style={{ perspective: "1200px" }}>
             {gallery.map((img, i) => (
-              <FadeUp key={i} delay={i * 0.1}>
-                <div className="group relative overflow-hidden aspect-[4/3]">
-                  <img
-                    src={img.src}
-                    alt={img.alt}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-6">
-                    <span className="font-[family-name:var(--font-mono)] text-xs text-brand-orange tracking-widest uppercase">
-                      {img.label}
-                    </span>
-                  </div>
-                </div>
-              </FadeUp>
+              <GalleryCard key={i} src={img.src} alt={img.alt} label={img.label} index={i} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── ABOUT ─── */}
-      <section id="about" className="py-20 lg:py-32 relative" style={{ marginTop: "-2rem", paddingTop: "5rem" }}>
+      {/* ─── ABOUT — Slide-in with floating elements ─── */}
+      <section id="about" className="py-20 lg:py-32 relative overflow-hidden" style={{ marginTop: "-2rem", paddingTop: "5rem" }}>
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <FadeUp>
+            <SlideIn from="left">
               <div className="relative">
                 <img
                   src={HERO_IMG}
                   alt="Archibald Contracting construction site"
-                  className="w-full aspect-[4/3] object-cover"
+                  className="w-full aspect-[4/3] object-cover shadow-[0_16px_60px_-12px_rgba(0,0,0,0.25)]"
                 />
-                {/* Floating stat card */}
-                <div className="absolute -bottom-6 -right-4 lg:-right-8 bg-brand-orange p-6 shadow-xl">
+                {/* Decorative border frame */}
+                <div className="absolute -inset-3 border-2 border-brand-orange/20 -z-10" />
+
+                {/* Floating stat card with 3D shadow */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ ...springTransition, delay: 0.4 }}
+                  className="absolute -bottom-6 -right-4 lg:-right-8 bg-gradient-to-br from-brand-orange to-brand-orange/85 p-6
+                             shadow-[0_16px_40px_-8px_rgba(180,80,20,0.5)]"
+                >
                   <span className="font-[family-name:var(--font-display)] text-3xl text-white block">
                     15+
                   </span>
                   <span className="text-white/80 text-sm font-[family-name:var(--font-mono)] tracking-wider uppercase">
                     Years in Business
                   </span>
-                </div>
+                </motion.div>
               </div>
-            </FadeUp>
+            </SlideIn>
 
-            <FadeUp delay={0.2}>
+            <SlideIn from="right" delay={0.2}>
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-[2px] bg-brand-orange" />
+                  <motion.div
+                    className="w-8 h-[2px] bg-brand-orange"
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    style={{ originX: 0 }}
+                  />
                   <span className="text-brand-orange font-[family-name:var(--font-mono)] text-xs tracking-widest uppercase">
                     About Us
                   </span>
@@ -537,33 +847,46 @@ export default function Home() {
                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                   <a
                     href="tel:9028633935"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-orange text-white font-semibold tracking-wide uppercase text-sm hover:bg-brand-orange/90 transition-all"
+                    className="group inline-flex items-center justify-center gap-2 px-6 py-3
+                               bg-gradient-to-r from-brand-orange to-brand-orange/90 text-white font-semibold tracking-wide uppercase text-sm
+                               shadow-[0_6px_24px_-4px_rgba(180,80,20,0.4)] hover:shadow-[0_12px_36px_-4px_rgba(180,80,20,0.6)]
+                               hover:-translate-y-0.5 transition-all duration-300"
                   >
-                    <Phone className="w-4 h-4" />
+                    <Phone className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
                     Call Us Today
                   </a>
                   <a
                     href="https://www.facebook.com/ArchibaldContracting"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-brand-charcoal/20 text-brand-charcoal font-semibold tracking-wide uppercase text-sm hover:border-brand-charcoal/40 transition-all"
+                    className="group inline-flex items-center justify-center gap-2 px-6 py-3
+                               border-2 border-brand-charcoal/20 text-brand-charcoal font-semibold tracking-wide uppercase text-sm
+                               hover:border-brand-charcoal/40 hover:bg-brand-charcoal/5 hover:-translate-y-0.5
+                               transition-all duration-300"
                   >
-                    <Facebook className="w-4 h-4" />
+                    <Facebook className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                     Follow on Facebook
                   </a>
                 </div>
               </div>
-            </FadeUp>
+            </SlideIn>
           </div>
         </div>
       </section>
 
-      {/* ─── REVIEWS ─── */}
+      {/* ─── REVIEWS — 3D tilt cards ─── */}
       <section id="reviews" className="py-20 lg:py-32 bg-brand-sandstone/50 dot-grid relative">
         <div className="container">
           <FadeUp>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-[2px] bg-brand-orange" />
+              <motion.div
+                className="w-8 h-[2px] bg-brand-orange"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                style={{ originX: 0 }}
+              />
               <span className="text-brand-orange font-[family-name:var(--font-mono)] text-xs tracking-widest uppercase">
                 Testimonials
               </span>
@@ -576,7 +899,7 @@ export default function Home() {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-5 h-5 ${i < 4 ? "text-brand-orange fill-brand-orange" : "text-brand-orange/40 fill-brand-orange/40"}`}
+                    className={`w-5 h-5 ${i < 4 ? "text-brand-orange fill-brand-orange drop-shadow-[0_1px_2px_rgba(180,80,20,0.3)]" : "text-brand-orange/40 fill-brand-orange/40"}`}
                   />
                 ))}
               </div>
@@ -586,43 +909,15 @@ export default function Home() {
             </div>
           </FadeUp>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6" style={{ perspective: "1200px" }}>
             {reviews.map((r, i) => (
-              <FadeUp key={i} delay={i * 0.1}>
-                <div className="bg-card border border-border p-8 relative">
-                  {/* Quote mark */}
-                  <span className="absolute top-4 right-6 font-[family-name:var(--font-display)] text-6xl text-brand-orange/10 leading-none">
-                    &ldquo;
-                  </span>
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(r.rating)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 text-brand-orange fill-brand-orange" />
-                    ))}
-                  </div>
-                  <p className="text-brand-charcoal leading-relaxed mb-6 italic">
-                    &ldquo;{r.text}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-brand-orange/10 flex items-center justify-center font-[family-name:var(--font-display)] text-brand-orange text-lg">
-                      {r.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-brand-charcoal text-sm">
-                        {r.name}
-                      </p>
-                      <p className="text-muted-foreground text-xs font-[family-name:var(--font-mono)]">
-                        {r.time}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </FadeUp>
+              <ReviewCard key={i} {...r} index={i} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── CONTACT / MAP ─── */}
+      {/* ─── CONTACT / MAP — Glassmorphism contact cards ─── */}
       <section
         id="contact"
         className="py-20 lg:py-32 bg-brand-dark relative"
@@ -633,7 +928,14 @@ export default function Home() {
             <FadeUp>
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-[2px] bg-brand-orange" />
+                  <motion.div
+                    className="w-8 h-[2px] bg-brand-orange"
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    style={{ originX: 0 }}
+                  />
                   <span className="text-brand-orange font-[family-name:var(--font-mono)] text-xs tracking-widest uppercase">
                     Get In Touch
                   </span>
@@ -647,14 +949,16 @@ export default function Home() {
                   you. Free estimates on all projects.
                 </p>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {/* Phone */}
                   <a
                     href="tel:9028633935"
-                    className="flex items-start gap-4 group"
+                    className="flex items-start gap-4 group p-4 bg-white/5 backdrop-blur-sm border border-white/10
+                               hover:bg-white/10 hover:border-white/20 hover:shadow-[0_8px_24px_-8px_rgba(180,80,20,0.2)]
+                               transition-all duration-300"
                   >
-                    <div className="w-12 h-12 bg-brand-orange/10 flex items-center justify-center shrink-0 group-hover:bg-brand-orange/20 transition-colors">
-                      <Phone className="w-5 h-5 text-brand-orange" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-brand-orange/70 flex items-center justify-center shrink-0 shadow-[0_4px_12px_-2px_rgba(180,80,20,0.4)]">
+                      <Phone className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <p className="text-white/40 text-xs font-[family-name:var(--font-mono)] tracking-wider uppercase mb-1">
@@ -671,10 +975,12 @@ export default function Home() {
                     href="https://maps.app.goo.gl/FJGk5njusN4hSEf6A"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-4 group"
+                    className="flex items-start gap-4 group p-4 bg-white/5 backdrop-blur-sm border border-white/10
+                               hover:bg-white/10 hover:border-white/20 hover:shadow-[0_8px_24px_-8px_rgba(180,80,20,0.2)]
+                               transition-all duration-300"
                   >
-                    <div className="w-12 h-12 bg-brand-orange/10 flex items-center justify-center shrink-0 group-hover:bg-brand-orange/20 transition-colors">
-                      <MapPin className="w-5 h-5 text-brand-orange" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-brand-orange/70 flex items-center justify-center shrink-0 shadow-[0_4px_12px_-2px_rgba(180,80,20,0.4)]">
+                      <MapPin className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <p className="text-white/40 text-xs font-[family-name:var(--font-mono)] tracking-wider uppercase mb-1">
@@ -687,9 +993,9 @@ export default function Home() {
                   </a>
 
                   {/* Hours */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-brand-orange/10 flex items-center justify-center shrink-0">
-                      <Clock className="w-5 h-5 text-brand-orange" />
+                  <div className="flex items-start gap-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10">
+                    <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-brand-orange/70 flex items-center justify-center shrink-0 shadow-[0_4px_12px_-2px_rgba(180,80,20,0.4)]">
+                      <Clock className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <p className="text-white/40 text-xs font-[family-name:var(--font-mono)] tracking-wider uppercase mb-1">
@@ -709,10 +1015,12 @@ export default function Home() {
                     href="https://www.facebook.com/ArchibaldContracting"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-4 group"
+                    className="flex items-start gap-4 group p-4 bg-white/5 backdrop-blur-sm border border-white/10
+                               hover:bg-white/10 hover:border-white/20 hover:shadow-[0_8px_24px_-8px_rgba(180,80,20,0.2)]
+                               transition-all duration-300"
                   >
-                    <div className="w-12 h-12 bg-brand-orange/10 flex items-center justify-center shrink-0 group-hover:bg-brand-orange/20 transition-colors">
-                      <Facebook className="w-5 h-5 text-brand-orange" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-brand-orange/70 flex items-center justify-center shrink-0 shadow-[0_4px_12px_-2px_rgba(180,80,20,0.4)]">
+                      <Facebook className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <p className="text-white/40 text-xs font-[family-name:var(--font-mono)] tracking-wider uppercase mb-1">
@@ -727,9 +1035,9 @@ export default function Home() {
               </div>
             </FadeUp>
 
-            {/* Map embed */}
+            {/* Map embed with elevated frame */}
             <FadeUp delay={0.2}>
-              <div className="w-full h-full min-h-[400px] relative">
+              <div className="w-full h-full min-h-[400px] relative shadow-[0_16px_60px_-12px_rgba(0,0,0,0.5)] border border-white/10">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2812.5!2d-61.9888587!3d45.6242327!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4b5c450cf697dec3%3A0x5543a9d20b91c88e!2sArchibald%20Robert%20General%20Contracting%20Ltd!5e0!3m2!1sen!2sca!4v1711648000000!5m2!1sen!2sca"
                   width="100%"
@@ -739,7 +1047,7 @@ export default function Home() {
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   title="Archibald Contracting Location"
-                  className="grayscale hover:grayscale-0 transition-all duration-500"
+                  className="grayscale hover:grayscale-0 transition-all duration-700"
                 />
               </div>
             </FadeUp>
@@ -754,14 +1062,14 @@ export default function Home() {
             {/* Brand */}
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 bg-brand-orange rounded-sm flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-brand-orange to-brand-orange/80 rounded-sm flex items-center justify-center shadow-[0_4px_16px_-2px_rgba(180,80,20,0.4)]">
                   <HardHat className="w-5 h-5 text-white" />
                 </div>
                 <div className="leading-tight">
                   <span className="font-[family-name:var(--font-display)] text-white text-lg tracking-tight">
-                    Archibald
+                    Robert Archibald
                   </span>
-                  <span className="block text-[11px] text-white/60 font-[family-name:var(--font-mono)] tracking-wider uppercase">
+                  <span className="block text-[11px] text-white/50 font-[family-name:var(--font-mono)] tracking-wider uppercase">
                     General Contracting
                   </span>
                 </div>
@@ -782,7 +1090,7 @@ export default function Home() {
                   <a
                     key={l.href}
                     href={l.href}
-                    className="block text-white/60 hover:text-brand-orange transition-colors text-sm"
+                    className="block text-white/60 hover:text-brand-orange transition-colors text-sm hover:translate-x-1 transform duration-200"
                   >
                     {l.label}
                   </a>
