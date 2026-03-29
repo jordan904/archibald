@@ -98,6 +98,34 @@
       '</div>';
 
     grid.appendChild(item);
+
+    // arch1 - Retaining Wall
+    var item2 = document.createElement("div");
+    item2.className = "group relative overflow-hidden rounded-xl";
+    item2.style.cssText = "aspect-ratio:4/3;position:relative;width:100%";
+    item2.innerHTML = '<img src="/archibald/assets/arch1.jpg" alt="Stone retaining wall construction, Antigonish NS" ' +
+      'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" ' +
+      'class="transition-transform duration-700 group-hover:scale-105" loading="lazy" />' +
+      '<div class="absolute inset-0 flex flex-col justify-end p-5" ' +
+      'style="background:linear-gradient(to top, rgba(21,17,13,0.85) 0%, transparent 60%)">' +
+      '<div style="font-family:\'DM Serif Display\',serif;font-size:1.1rem;color:white">Retaining Wall</div>' +
+      '<div style="font-family:\'Work Sans\',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.25rem">Antigonish, NS</div>' +
+      '</div>';
+    grid.appendChild(item2);
+
+    // arch2 - Foundation Work
+    var item3 = document.createElement("div");
+    item3.className = "group relative overflow-hidden rounded-xl";
+    item3.style.cssText = "aspect-ratio:4/3;position:relative;width:100%";
+    item3.innerHTML = '<img src="/archibald/assets/arch2.jpg" alt="Foundation and excavation work, Antigonish NS" ' +
+      'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" ' +
+      'class="transition-transform duration-700 group-hover:scale-105" loading="lazy" />' +
+      '<div class="absolute inset-0 flex flex-col justify-end p-5" ' +
+      'style="background:linear-gradient(to top, rgba(21,17,13,0.85) 0%, transparent 60%)">' +
+      '<div style="font-family:\'DM Serif Display\',serif;font-size:1.1rem;color:white">Foundation Work</div>' +
+      '<div style="font-family:\'Work Sans\',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.25rem">Antigonish, NS</div>' +
+      '</div>';
+    grid.appendChild(item3);
   }
 
   // Fix nav immediately
