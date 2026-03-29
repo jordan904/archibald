@@ -126,6 +126,20 @@
       '<div style="font-family:\'Work Sans\',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.25rem">Antigonish, NS</div>' +
       '</div>';
     grid.appendChild(item3);
+
+    // arch3 - Concrete Formwork
+    var item4 = document.createElement("div");
+    item4.className = "group relative overflow-hidden rounded-xl";
+    item4.style.cssText = "aspect-ratio:4/3;position:relative;width:100%";
+    item4.innerHTML = '<img src="/archibald/assets/arch3.jpg" alt="Concrete foundation formwork, Antigonish NS" ' +
+      'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" ' +
+      'class="transition-transform duration-700 group-hover:scale-105" loading="lazy" />' +
+      '<div class="absolute inset-0 flex flex-col justify-end p-5" ' +
+      'style="background:linear-gradient(to top, rgba(21,17,13,0.85) 0%, transparent 60%)">' +
+      '<div style="font-family:\'DM Serif Display\',serif;font-size:1.1rem;color:white">Concrete Formwork</div>' +
+      '<div style="font-family:\'Work Sans\',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.25rem">Antigonish, NS</div>' +
+      '</div>';
+    grid.appendChild(item4);
   }
 
   // Fix nav immediately
