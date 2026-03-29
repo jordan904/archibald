@@ -76,17 +76,44 @@
     });
   }
 
+  function addGalleryPhoto() {
+    var workSection = document.getElementById("work");
+    if (!workSection) return;
+
+    // Find the grid container inside the work section
+    var grid = workSection.querySelector("[class*='grid']");
+    if (!grid) return;
+
+    // Create a new gallery item matching the existing style
+    var item = document.createElement("div");
+    item.className = "group relative overflow-hidden rounded-xl";
+    item.style.cssText = "aspect-ratio:4/3;position:relative;width:100%";
+    item.innerHTML = '<img src="/archibald/assets/arch.jpg" alt="Waterfront residential build with solar panels, Antigonish NS" ' +
+      'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" ' +
+      'class="transition-transform duration-700 group-hover:scale-105" loading="lazy" />' +
+      '<div class="absolute inset-0 flex flex-col justify-end p-5" ' +
+      'style="background:linear-gradient(to top, rgba(21,17,13,0.85) 0%, transparent 60%)">' +
+      '<div style="font-family:\'DM Serif Display\',serif;font-size:1.1rem;color:white">Waterfront Residential Build</div>' +
+      '<div style="font-family:\'Work Sans\',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.25rem">Antigonish, NS</div>' +
+      '</div>';
+
+    grid.appendChild(item);
+  }
+
   // Fix nav immediately
   fixNavLinks();
 
-  // Wait for React to render then add form
+  // Wait for React to render then add form and gallery photo
   var attempts = 0;
   var interval = setInterval(function () {
     attempts++;
     var contact = document.getElementById("contact");
     if (contact) {
       clearInterval(interval);
-      setTimeout(addQuoteForm, 300);
+      setTimeout(function () {
+        addQuoteForm();
+        addGalleryPhoto();
+      }, 300);
     } else if (attempts >= 80) {
       clearInterval(interval);
     }
